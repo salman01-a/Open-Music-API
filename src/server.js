@@ -1,6 +1,8 @@
 import express from 'express'; 
 import { createAlbum, getAlbumById, editAlbum, deleteAlbum} from './handler/album.js';
 import {  addSong, getAllSongs, getSongById, editSongs, deleteSong } from './handler/song.js';
+import { createUser} from './handler/user.js';
+import { getToken, updateAccesToken, deleteRefreshToken } from './handler/auth.js';
 import dotenv from 'dotenv';
 dotenv.config();
 const app = express();
@@ -19,6 +21,12 @@ app.get('/songs', getAllSongs);
 app.get('/songs/:id', getSongById);
 app.put('/songs/:id', editSongs);
 app.delete('/songs/:id', deleteSong);
+
+//Endpoint User 
+app.post('/users', createUser);
+app.post('/authentications', getToken);
+app.put('/authentications', updateAccesToken);
+app.delete('/authentications', deleteRefreshToken);
 
 
 app.listen(PORT, () => {
