@@ -3,6 +3,8 @@ import { createAlbum, getAlbumById, editAlbum, deleteAlbum} from './handler/albu
 import {  addSong, getAllSongs, getSongById, editSongs, deleteSong } from './handler/song.js';
 import { createUser} from './handler/user.js';
 import { getToken, updateAccesToken, deleteRefreshToken } from './handler/auth.js';
+import { createPlaylist, getPlaylist, deletePlaylist } from './handler/playlist.js';
+import { addSongToPlaylist, getPlaylistSongs, deleteSongFromPlaylist } from './handler/playlist_song.js';
 import dotenv from 'dotenv';
 dotenv.config();
 const app = express();
@@ -28,6 +30,13 @@ app.post('/authentications', getToken);
 app.put('/authentications', updateAccesToken);
 app.delete('/authentications', deleteRefreshToken);
 
+//Endpoint Playlist
+app.post('/playlists',createPlaylist );
+app.get('/playlists', getPlaylist );
+app.delete('/playlists/:playlistId', deletePlaylist);
+app.post('/playlists/:playlistId/songs', addSongToPlaylist );
+app.get('/playlists/:playlistId/songs', getPlaylistSongs );
+app.delete('/playlists/:playlistId/songs', deleteSongFromPlaylist );
 
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
