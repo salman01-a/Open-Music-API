@@ -1,6 +1,5 @@
 
 import pool from '../database/connection.js';
-import { nanoid } from 'nanoid';
 import { verifyAccessToken } from '../auth/jwt.js';
 
 
@@ -15,6 +14,7 @@ if(req.headers.authorization === undefined){
     const owner = verifyAccessToken(bearerToken);
     const playlistId = req.params.playlistId;
     try{
+
         const ownerCheck = await pool.query(
             "SELECT * FROM playlist WHERE id = $1 AND owner_id = $2",
             [playlistId, owner]
@@ -23,6 +23,17 @@ if(req.headers.authorization === undefined){
             "SELECT * FROM collaborators WHERE playlist_id = $1 AND user_id = $2",  
             [playlistId, owner]
         );
+        const playlistCheck = await pool.query(
+            "SELECT * FROM playlist WHERE id = $1",
+            [playlistId]
+        );
+
+        if (playlistCheck.rows.length === 0){
+            return res.status(404).json({
+                status: "fail",
+                message: "Playlist not found",
+            });
+        }
 
         ownerCheck.rows.push(...collabCheck.rows);
         if (ownerCheck.rows.length === 0){
@@ -33,12 +44,12 @@ if(req.headers.authorization === undefined){
         }
 
         const result = await pool.query(
-            `SELECT users.username, songs.title, playlist_song_activities.action, playlist_song_activities.time 
-            FROM playlist_song_activities 
-            JOIN users ON playlist_song_activities.user_id = users.id 
-            JOIN songs ON playlist_song_activities.song_id = songs.id 
-            WHERE playlist_song_activities.playlist_id = $1
-            ORDER BY playlist_song_activities.time ASC`,
+            `SELECT users.username, songs.title, activities.action, activities.time 
+            FROM activities 
+            JOIN users ON activities.user_id = users.id 
+            JOIN songs ON activities.song_id = songs.id 
+            WHERE activities.playlist_id = $1
+            ORDER BY activities.time ASC`,
             [playlistId]
         );
 
@@ -57,3 +68,4 @@ if(req.headers.authorization === undefined){
         });
     }
 }
+export { getActivities };

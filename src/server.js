@@ -6,6 +6,7 @@ import { getToken, updateAccesToken, deleteRefreshToken } from './handler/auth.j
 import { createPlaylist, getPlaylist, deletePlaylist } from './handler/playlist.js';
 import { addSongToPlaylist, getPlaylistSongs, deleteSongFromPlaylist } from './handler/playlist_song.js';
 import { addCollaborator, removeCollaborator } from './handler/collaborators.js';
+import { getActivities } from './handler/activities.js';
 import dotenv from 'dotenv';
 dotenv.config();
 const app = express();
@@ -45,6 +46,7 @@ app.delete('/collaborations', removeCollaborator );
 
 
 //Enpoint Activities
+app.get('/playlists/:playlistId/activities', getActivities );
 
 
 app.listen(PORT, () => {

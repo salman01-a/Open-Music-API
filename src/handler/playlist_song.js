@@ -58,6 +58,11 @@ const addSongToPlaylist = async (req, res) => {
         if (result.rows.length === 0) {
             throw new Error("Error adding song to playlist");
         }
+
+        await pool.query(
+            "INSERT INTO activities (id, playlist_id, song_id, user_id, action, time) VALUES ($1, $2, $3, $4, $5, NOW())",
+            [`activity-${nanoid(16)}`, playlistId, songId, owner, 'add']
+        );
         res.status(201).json({
             status: "success",
             message: "Song added to playlist",
@@ -196,7 +201,10 @@ const deleteSongFromPlaylist = async (req, res) => {
                 message: "Song not found in playlist",
             });
         }
-        
+        await pool.query(
+            "INSERT INTO activities (id, playlist_id, song_id, user_id, action, time) VALUES ($1, $2, $3, $4, $5, NOW())",
+            [`activity-${nanoid(16)}`, playlistId, songId, owner, 'delete']
+        );
         res.status(200).json({
             status: "success",
             message: "Song deleted from playlist",
