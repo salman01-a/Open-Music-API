@@ -21,7 +21,6 @@ const addSongToPlaylist = async (req, res) => {
         });
     }
     const id = 'playlist-song-'+nanoid(16);
-
     const { songId } = value;
     const playlistId= req.params.playlistId;
 
@@ -40,7 +39,13 @@ const addSongToPlaylist = async (req, res) => {
             "SELECT * FROM playlist WHERE id = $1 AND owner_id = $2",
             [playlistId, owner]
         );
-        if (ownerCheck.rows.length === 0) {
+        const collabCheck = await pool.query(
+            "SELECT * FROM collaborators WHERE playlist_id = $1 AND user_id = $2",  
+            [playlistId, owner]
+        );
+
+        ownerCheck.rows.push(...collabCheck.rows);
+        if (ownerCheck.rows.length === 0){
             return res.status(403).json({
                 status: "fail",
                 message: "Playlist not found or you don't have access",
@@ -79,55 +84,57 @@ const getPlaylistSongs = async (req, res) => {
     const playlistId= req.params.playlistId;
 
     try {
-        const playlistCheck = await pool.query(
-            "SELECT * FROM playlist WHERE id = $1",
+        const collabCheck = await pool.query(
+            "SELECT * FROM collaborators WHERE playlist_id = $1 AND user_id = $2",
+            [playlistId, owner]
+        );
+        let isCollaborator = false;
+        if (collabCheck.rows.length > 0) {
+            isCollaborator = true;
+        }
+        const playlistRes = await pool.query(
+            `SELECT p.id, p.name, p.owner_id, u.username
+             FROM playlist p
+             JOIN users u ON p.owner_id = u.id
+             WHERE p.id = $1`,
             [playlistId]
         );
-        if (playlistCheck.rows.length === 0) {
+    
+        if (playlistRes.rows.length === 0) {
             return res.status(404).json({
                 status: "fail",
                 message: "Playlist not found",
             });
         }
-        
-        const ownerCheck = await pool.query(
-            "SELECT * FROM playlist WHERE id = $1 AND owner_id = $2",   
-            [playlistId, owner]
-        );
-        if (ownerCheck.rows[0].owner_id !== owner )  {
+    
+        const playlistRow = playlistRes.rows[0];
+        if (playlistRow.owner_id !== owner && !isCollaborator) {
             return res.status(403).json({
                 status: "fail",
-                message: "Playlist not found or you don't have access",
+                message: "You don't have access to this playlist",
             });
         }
-        const result = await pool.query(
-        `SELECT songs.id,songs.title,songs.performer, users.username, playlist.name
-        FROM playlist JOIN playlist_song ON playlist.id = playlist_song.playlist_id 
-        JOIN songs ON playlist_song.song_id = songs.id JOIN users 
-        ON playlist.owner_id = users.id WHERE playlist.id = $1 AND playlist.owner_id = $2`,
-        [playlistId, owner]
+        const songsRes = await pool.query(
+            `SELECT s.id, s.title, s.performer
+             FROM playlist_song ps
+             JOIN songs s ON ps.song_id = s.id
+             WHERE ps.playlist_id = $1`,
+            [playlistId]
         );
-
-        if (result.rows.length === 0) {
-
-            return res.status(404).json({
-                status: "fail",
-                message: "Playlist not found or you don't have access",
-            });
-        }
-
+        const songs = songsRes.rows.map((r) => ({
+            id: r.id,
+            title: r.title,
+            performer: r.performer,
+        }));
+    
         res.status(200).json({
             status: "success",
             data: {
                 playlist: {
-                    id: playlistId,
-                    name: result.rows[0].name,
-                    username: result.rows[0].username,
-                    songs: result.rows.map((row) => ({
-                        id: row.id,
-                        title: row.title,
-                        performer: row.performer,
-                    })),
+                    id: playlistRow.id,
+                    name: playlistRow.name,
+                    username: playlistRow.username,
+                    songs: songs,
                 },
             },
         });
@@ -159,11 +166,21 @@ const deleteSongFromPlaylist = async (req, res) => {
     const playlistId= req.params.playlistId;
 
     try {   
+        const collabCheck = await pool.query(
+            "SELECT * FROM collaborators WHERE playlist_id = $1 AND user_id = $2",
+            [playlistId, owner]
+        );
+        let isCollaborator = false;
+        if (collabCheck.rows.length > 0) {
+            isCollaborator = true;
+        }
+
+
         const ownerCheck = await pool.query(
             "SELECT * FROM playlist WHERE id = $1 AND owner_id = $2",
             [playlistId, owner]
         );
-        if (ownerCheck.rows.length === 0) {
+        if (ownerCheck.rows.length === 0 && !isCollaborator) {
             return res.status(403).json({
                 status: "fail",
                 message: "Playlist not found or you don't have access",
@@ -179,6 +196,7 @@ const deleteSongFromPlaylist = async (req, res) => {
                 message: "Song not found in playlist",
             });
         }
+        
         res.status(200).json({
             status: "success",
             message: "Song deleted from playlist",
@@ -189,7 +207,6 @@ const deleteSongFromPlaylist = async (req, res) => {
             message: error.message,
         });
     }
-
 
 };
 

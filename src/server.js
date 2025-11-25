@@ -5,6 +5,7 @@ import { createUser} from './handler/user.js';
 import { getToken, updateAccesToken, deleteRefreshToken } from './handler/auth.js';
 import { createPlaylist, getPlaylist, deletePlaylist } from './handler/playlist.js';
 import { addSongToPlaylist, getPlaylistSongs, deleteSongFromPlaylist } from './handler/playlist_song.js';
+import { addCollaborator, removeCollaborator } from './handler/collaborators.js';
 import dotenv from 'dotenv';
 dotenv.config();
 const app = express();
@@ -37,6 +38,14 @@ app.delete('/playlists/:playlistId', deletePlaylist);
 app.post('/playlists/:playlistId/songs', addSongToPlaylist );
 app.get('/playlists/:playlistId/songs', getPlaylistSongs );
 app.delete('/playlists/:playlistId/songs', deleteSongFromPlaylist );
+
+//Endpoint Collaboration
+app.post('/collaborations',addCollaborator );
+app.delete('/collaborations', removeCollaborator );
+
+
+//Enpoint Activities
+
 
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);

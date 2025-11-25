@@ -58,14 +58,25 @@ const getPlaylist = async (req, res) => {
     const  bearerToken = req.headers.authorization.split(" ")[1];
     const owner = verifyAccessToken(bearerToken);
     try {
+        const checkColaboration = await pool.query(
+            "SELECT playlist.id, playlist.name, users.username FROM playlist JOIN collaborators ON playlist.id = collaborators.playlist_id JOIN users ON playlist.owner_id = users.id WHERE collaborators.user_id = $1",
+            [owner]
+        );
+        let playlists = checkColaboration.rows;
         const result = await pool.query(
             "SELECT playlist.id, playlist.name, users.username FROM playlist JOIN users ON playlist.owner_id = users.id WHERE owner_id = $1",
             [owner]
         );
+
+        playlists = playlists.concat(result.rows);
         res.status(200).json({
             status: "success",
             data: {
-                playlists: result.rows,
+                playlists: playlists.map((playlist) => ({
+                    id: playlist.id,
+                    name: playlist.name,
+                    username: playlist.username,
+                })),
             },
         });
     } catch (error) {
