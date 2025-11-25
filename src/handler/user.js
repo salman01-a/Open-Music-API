@@ -16,6 +16,17 @@ const createUser = async (req, res) => {
     const refreshToken = generateRefreshToken({userId});
     const authid = `auth-${nanoid(16)}`;
     try {
+    const checkUser = await pool.query(
+        "SELECT id FROM users WHERE username = $1",
+        [username]
+    );
+    if (checkUser.rows.length > 0) {
+        return res.status(400).json({
+        status: "fail",
+        message: "Username already exists",
+        });
+    }
+
     const result = await pool.query(
         "INSERT INTO users (id, username, password, fullname) VALUES ($1, $2 ,$3, $4) RETURNING id",
         [userId, username, password, fullname]);

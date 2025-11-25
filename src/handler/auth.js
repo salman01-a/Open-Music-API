@@ -96,7 +96,7 @@ const deleteRefreshToken = async (req, res) => {
             [refreshToken]
         );
         if (result.rows.length === 0) {
-            return res.status(404).json({
+            return res.status(400).json({
                 status: "fail",
                 message: "Refresh token not found",
             });
