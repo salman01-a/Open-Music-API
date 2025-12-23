@@ -1,7 +1,10 @@
-import pool from "../database/connection.js";
+import pool from "../../database/connection.js";
 import { nanoid } from "nanoid";
-import { validateAlbum } from "../validator/albumsValidator.js";
-
+import { validateAlbum } from "../../validator/albumsValidator.js";
+import upload from "../../validator/UploadValidator.js";
+import multer from "multer";
+import dotenv from "dotenv";
+dotenv.config();
 const getAlbumById = async (req, res) => {
   const albumId = req.params.id;
   try {
@@ -127,4 +130,37 @@ const editAlbum = async (req, res) => {
   }
 };
 
-export { getAlbumById, createAlbum, deleteAlbum, editAlbum };
+const uploadAlbumCoverHandler = (req, res) => {
+  const { id: albumId } = req.params;
+
+  upload.single("cover")(req, res, async (err) => {
+    if (err instanceof multer.MulterError && err.code === "LIMIT_FILE_SIZE") {
+      return res.status(413).json({ status: "fail", message: "Payload Too Large" });
+    }
+    if (err) return res.status(400).json({ status: "fail", message: err.message });
+
+    if (!req.file) return res.status(400).json({ status: "fail", message: "Sampul wajib diunggah" });
+
+    try {
+      
+      const coverUrl = `http://localhost:${process.env.PORT}/src/handler/album/cover_fileupload/${req.file.filename}`;
+      const result = await pool.query(
+        'UPDATE albums SET "coverUrl" = $1 WHERE id = $2 RETURNING id',
+        [coverUrl, albumId]
+      );
+
+      if (result.rows.length === 0) {
+        return res.status(404).json({ status: "fail", message: "Album tidak ditemukan" });
+      }
+      return res.status(201).json({
+        status: "success",
+        message: "Sampul berhasil diunggah",
+      });
+    } catch (error) {
+      return res.status(500).json({ status: "error", message: error.message });
+    }
+  });
+};
+
+
+export { getAlbumById, createAlbum, deleteAlbum, editAlbum, uploadAlbumCoverHandler };

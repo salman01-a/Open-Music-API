@@ -1,5 +1,5 @@
 import express from 'express'; 
-import { createAlbum, getAlbumById, editAlbum, deleteAlbum} from './handler/album.js';
+import { createAlbum, getAlbumById, editAlbum, deleteAlbum, uploadAlbumCoverHandler} from './handler/album/album.js';
 import {  addSong, getAllSongs, getSongById, editSongs, deleteSong } from './handler/song.js';
 import { createUser} from './handler/user.js';
 import { getToken, updateAccesToken, deleteRefreshToken } from './handler/auth.js';
@@ -7,11 +7,15 @@ import { createPlaylist, getPlaylist, deletePlaylist } from './handler/playlist.
 import { addSongToPlaylist, getPlaylistSongs, deleteSongFromPlaylist } from './handler/playlist_song.js';
 import { addCollaborator, removeCollaborator } from './handler/collaborators.js';
 import { getActivities } from './handler/activities.js';
+import { exportMessageHandler } from './handler/export.js';
+import { likeAlbumHandler, unlikeAlbumHandler, countAlbumLikesHandler } from './handler/album/like-album.js';
 import dotenv from 'dotenv';
+import path from 'path';
 dotenv.config();
 const app = express();
 app.use(express.json());
 
+app.use( '/src/handler/album/cover_fileupload', express.static(path.join(process.cwd(), 'public/covers')));
 const PORT = process.env.PORT || 5000;
 //Endpoint Album
 app.post('/albums', createAlbum);
@@ -47,6 +51,17 @@ app.delete('/collaborations', removeCollaborator );
 
 //Enpoint Activities
 app.get('/playlists/:playlistId/activities', getActivities );
+
+//Endpoint Export
+app.post('/export/playlists/:playlistId', exportMessageHandler );
+
+//Endpoint Upload Cover Album
+app.post('/albums/:id/covers', uploadAlbumCoverHandler );
+
+//Endpoint Like Album
+app.post('/albums/:id/likes', likeAlbumHandler );
+app.delete('/albums/:id/likes', unlikeAlbumHandler );
+app.get('/albums/:id/likes', countAlbumLikesHandler );
 
 
 app.listen(PORT, () => {
